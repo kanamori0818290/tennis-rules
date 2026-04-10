@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>団体戦・合同チームルール解説</title>
+  
+  <!-- スタイリングのためのTailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- ReactとReactDOM (安定版のcdnjsを使用) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- JSXをブラウザで実行するためのBabel (安定版) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+
+  <style>
+    /* スクロールバーを隠す用のスタイル */
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* アニメーション用 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in { animation: fadeIn 0.3s ease-out forwards; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+  
+  <!-- Reactの描画先。エラーや読み込み中の場合はこの文字が表示されます -->
+  <div id="root">
+    <div style="padding: 40px; text-align: center; color: #475569; font-family: sans-serif;">
+      <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">⏳ 読み込み中... または エラー</h2>
+      <p style="margin-bottom: 20px;">もしこの画面から進まない場合は、以下の原因が考えられます。</p>
+      <div style="background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto;">
+        <strong>【よくある原因と解決策】</strong><br><br>
+        1. <strong>インターネットに接続されていない</strong><br>
+        　→ インターネットに繋がった状態で開いてください。<br><br>
+        2. <strong>ファイルの保存形式（文字コード）が間違っている</strong><br>
+        　→ メモ帳で「名前を付けて保存」する際、画面下部の<strong>「エンコード」を必ず「UTF-8」</strong>にして上書き保存し直してください。
+      </div>
+    </div>
+  </div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // --- アイコンの定義 (LucideアイコンのSVGを手動定義) ---
+    const IconWrapper = ({ children, size = 24, className = '' }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        {children}
+      </svg>
+    );
+    const Users = (props) => <IconWrapper {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconWrapper>;
+    const UserPlus = (props) => <IconWrapper {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></IconWrapper>;
+    const CalendarCheck = (props) => <IconWrapper {...props}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></IconWrapper>;
+    const AlertTriangle = (props) => <IconWrapper {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconWrapper>;
+    const CheckCircle2 = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></IconWrapper>;
+    const XCircle = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconWrapper>;
+    const ArrowRight = (props) => <IconWrapper {...props}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></IconWrapper>;
+    const Info = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></IconWrapper>;
+    const Trophy = (props) => <IconWrapper {...props}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></IconWrapper>;
+    const UserCog = (props) => <IconWrapper {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><circle cx="19" cy="11" r="2"/><path d="M19 8v1"/><path d="M19 13v1"/><path d="M21.6 9.5l-.87.5"/><path d="M17.27 13l-.87.5"/><path d="M21.6 12.5l-.87-.5"/><path d="M17.27 9l-.87-.5"/></IconWrapper>;
+    const HelpCircle = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconWrapper>;
+    const AlertOctagon = (props) => <IconWrapper {...props}><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconWrapper>;
+
+    // --- UIコンポーネント群 ---
+    const Card = ({ children, className = '' }) => (
+      <div className={`bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden ${className}`}>
+        {children}
+      </div>
+    );
+
+    const FlowStep = ({ title, icon: Icon, children, isLast = false }) => (
+      <div className="flex gap-4">
+        <div className="flex flex-col items-center">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 z-10 shrink-0">
+            <Icon size={24} />
+          </div>
+          {!isLast && <div className="w-1 bg-blue-100 flex-1 my-2 rounded-full min-h-[2rem]"></div>}
+        </div>
+        <div className="pb-8 flex-1">
+          <h3 className="text-lg font-bold text-slate-800 mb-3">{title}</h3>
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+            {children}
+          </div>
+        </div>
+      </div>
+    );
+
+    const DecisionBox = ({ question, yesLabel = 'はい', noLabel = 'いいえ', yesContent, noContent }) => (
+      <div className="my-4 border border-indigo-100 rounded-lg overflow-hidden">
+        <div className="bg-indigo-50 p-4 border-b border-indigo-100 flex items-start gap-3">
+          <HelpCircle className="text-indigo-500 shrink-0 mt-0.5" size={20} />
+          <span className="font-semibold text-indigo-900">{question}</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-indigo-50">
+          <div className="p-4 bg-white">
+            <div className="flex items-center gap-2 text-emerald-600 font-bold mb-2">
+              <CheckCircle2 size={18} /> {yesLabel}の場合
+            </div>
+            <div className="text-sm text-slate-600">{yesContent}</div>
+          </div>
+          <div className="p-4 bg-white">
+            <div className="flex items-center gap-2 text-rose-500 font-bold mb-2">
+              <XCircle size={18} /> {noLabel}の場合
+            </div>
+            <div className="text-sm text-slate-600">{noContent}</div>
+          </div>
+        </div>
+      </div>
+    );
+
+    // --- メインアプリ ---
+    function App() {
+      const [activeTab, setActiveTab] = useState('city');
+
+      const tabs = [
+        { id: 'city', label: '富山市団体戦 (合同チーム)', icon: Users },
+        { id: 'pref-single', label: '県団体戦 (単独クラブ)', icon: Trophy },
+        { id: 'pref-joint', label: '県団体戦 (合同チーム)', icon: Users },
+        { id: 'tateyama', label: '立山科学', icon: CalendarCheck },
+        { id: 'members', label: 'メンバーA・Bとは？', icon: Info },
+      ];
+
+      const renderContent = () => {
+        switch (activeTab) {
+          case 'city':
+            return (
+              <div className="animate-in">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                  <Users className="text-blue-500" />
+                  富山市団体戦：合同チーム参加フロー
+                </h2>
+                
+                <div className="mt-8 pl-2">
+                  <FlowStep title="1. 参加資格の確認" icon={UserPlus}>
+                    <p className="text-sm text-slate-600 mb-4">
+                      合同チームとして参加するには、選手が以下の【A】または【B】の条件を満たしている必要があります。
+                    </p>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded border border-blue-100 shadow-sm">
+                        <div className="font-bold text-blue-700 mb-2 border-b border-blue-50 pb-2">メンバー【A】</div>
+                        <ul className="text-sm text-slate-600 space-y-2 list-disc pl-4">
+                          <li>選手権登録のクラブ員が<strong>6名以下</strong>のクラブ</li>
+                          <li>または、<strong>50歳以上が2名以下</strong>のクラブの合同希望メンバー</li>
+                          <li className="text-rose-500 font-semibold mt-2 list-none">※2名以上での申込が必要</li>
+                        </ul>
+                      </div>
+                      <div className="bg-white p-4 rounded border border-green-100 shadow-sm">
+                        <div className="font-bold text-green-700 mb-2 border-b border-green-50 pb-2">メンバー【B】</div>
+                        <ul className="text-sm text-slate-600 space-y-2 list-disc pl-4">
+                          <li>クラブが単独で出場するチームに含まれない、残りの選手権登録している合同希望メンバー</li>
+                          <li className="text-rose-500 font-semibold mt-2 list-none">※2名以上での申込が必要</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </FlowStep>
+
+                  <FlowStep title="2. 募集・申込" icon={CalendarCheck}>
+                    <p className="text-sm text-slate-600">
+                      申込締め切り後、合同チームの人数や年齢のバランスを考慮して、協会から<strong>合同希望を出していないクラブに申込を打診する</strong>場合があります。
+                    </p>
+                  </FlowStep>
+
+                  <FlowStep title="3. チーム編成 (協会にて抽選)" icon={Users}>
+                    <ul className="text-sm text-slate-600 space-y-2 list-disc pl-4 mb-3">
+                      <li>協会で抽選を行いチームを編成します。</li>
+                      <li><strong>最大3クラブ</strong>、合計人数<strong>10名以内</strong>となります。</li>
+                    </ul>
+                    <div className="bg-rose-50 text-rose-700 p-3 rounded-md text-sm flex items-start gap-2">
+                      <AlertTriangle className="shrink-0 mt-0.5" size={16} />
+                      <p>チーム編成の要件に合わず、抽選に漏れた場合は<strong>参加不可</strong>となります。</p>
+                    </div>
+                  </FlowStep>
+
+                  <FlowStep title="4. 大会当日" icon={Trophy} isLast={true}>
+                    <div className="bg-white border-l-4 border-amber-400 p-4 rounded shadow-sm mb-4">
+                      <h4 className="font-bold text-slate-800 mb-2">厳守ルール</h4>
+                      <p className="text-sm text-slate-700"><strong>各クラブ最低2名以上</strong>出場しなければなりません。</p>
+                    </div>
+                    
+                    <div className="bg-rose-50 p-4 rounded-md text-sm border border-rose-100">
+                      <div className="font-bold text-rose-700 flex items-center gap-2 mb-2">
+                        <AlertOctagon size={18} />
+                        ルール違反時のペナルティ
+                      </div>
+                      <ul className="list-disc pl-5 text-rose-700 space-y-1 mb-3">
+                        <li>違反した場合、その対戦は負け扱いとなります。</li>
+                        <li>スコア記録：<span className="font-mono bg-white px-2 py-0.5 rounded border border-rose-200">マッチ: 0-3 / ゲーム: 0-9 / ポイント: 0-36</span></li>
+                      </ul>
+                      <p className="text-xs text-rose-600 font-semibold">
+                        ※メンバー表提出から採点表にサインするまでの間に発覚した場合は【失格】となります。
+                      </p>
+                    </div>
+                  </FlowStep>
+                </div>
+              </div>
+            );
+
+          case 'pref-single':
+            return (
+              <div className="animate-in">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                  <Trophy className="text-amber-500" />
+                  富山県団体戦：メンバー不足時の対応 (単独クラブ)
+                </h2>
+
+                <Card className="mb-8 p-5 bg-amber-50/50 border-amber-100">
+                  <h3 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
+                    <CheckCircle2 size={20} /> チーム編成の基本条件
+                  </h3>
+                  <ul className="text-sm text-slate-700 space-y-2 list-disc pl-5">
+                    <li>① 選手権登録のあるクラブ員であること</li>
+                    <li>② メンバー【B】を含む合同チームが「県大会出場権が無い」場合 ⇒ メンバー【B】も登録可能</li>
+                  </ul>
+                </Card>
+
+                <h3 className="font-bold text-slate-800 mb-4 text-lg border-b pb-2">申込〜大会までのフロー</h3>
+                
+                <div className="space-y-6">
+                  <div className="relative pl-6 border-l-2 border-indigo-200 pb-4">
+                    <div className="absolute w-4 h-4 bg-indigo-500 rounded-full -left-[9px] top-1"></div>
+                    <h4 className="font-bold text-indigo-900 mb-2">フェーズ1：参加申込前</h4>
+                    <DecisionBox 
+                      question="チームのメンバーは不足していますか？"
+                      noLabel="不足していない"
+                      noContent={<div className="flex items-center gap-2"><ArrowRight size={16}/> 通常通り参加申込へ進みます。</div>}
+                      yesLabel="不足している"
+                      yesContent={
+                        <div className="mt-2 space-y-3">
+                          <p className="font-semibold text-slate-700 border-b pb-1">理事の補充が可能で、4名以上揃いますか？</p>
+                          <p className="text-xs text-slate-500">※事前に補充可能理事数を確定しておくこと<br/>※理事の補充は富山市大会上位チーム優先</p>
+                          <div className="flex flex-col gap-2 mt-2">
+                            <div className="bg-emerald-50 p-2 rounded border border-emerald-100 text-emerald-700">
+                              <strong>YES：</strong> 補充して参加申込へ進みます。
+                            </div>
+                            <div className="bg-rose-50 p-2 rounded border border-rose-100 text-rose-700">
+                              <strong>NO：</strong> <span className="font-bold">次点のチーム</span>に出場権が移ります。
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    />
+                  </div>
+
+                  <div className="relative pl-6 border-l-2 border-indigo-200 pb-4">
+                    <div className="absolute w-4 h-4 bg-indigo-500 rounded-full -left-[9px] top-1"></div>
+                    <h4 className="font-bold text-indigo-900 mb-2">フェーズ2：抽選後（大会直前）</h4>
+                    <DecisionBox 
+                      question="怪我などで再びメンバーが不足しましたか？"
+                      noLabel="不足していない"
+                      noContent={<div className="flex items-center gap-2 text-lg font-bold text-blue-600"><Trophy size={20}/> 大会参加！</div>}
+                      yesLabel="不足している"
+                      yesContent={
+                        <div className="mt-2 space-y-3">
+                          <p className="font-semibold text-slate-700 border-b pb-1">理事（最大2名）の補充は可能ですか？</p>
+                          <div className="flex flex-col gap-2 mt-2">
+                            <div className="bg-emerald-50 p-2 rounded border border-emerald-100 text-emerald-700">
+                              <strong>補充可：</strong> 補充して大会参加！
+                            </div>
+                            <div className="bg-amber-50 p-2 rounded border border-amber-200 text-amber-700">
+                              <strong>補充不可：</strong> オープン参加となります。
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 'pref-joint':
+            return (
+              <div className="animate-in">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                  <Users className="text-purple-500" />
+                  富山県団体戦：メンバー不足時の対応 (合同チーム)
+                </h2>
+
+                <Card className="mb-8 p-5 bg-purple-50/50 border-purple-100">
+                  <h3 className="font-bold text-purple-800 mb-3 flex items-center gap-2">
+                    <CheckCircle2 size={20} /> チーム編成の基本条件
+                  </h3>
+                  <ul className="text-sm text-slate-700 space-y-3 pl-2">
+                    <li className="flex gap-2 items-start"><span className="font-bold text-purple-600">①</span> メンバー【A】、当該クラブの選手権登録のあるクラブ員</li>
+                    <li className="flex gap-2 items-start">
+                      <span className="font-bold text-purple-600">②</span> 
+                      <div>
+                        メンバー【B】、追加できるのは以下の条件のみ：
+                        <ul className="list-[lower-alpha] pl-5 mt-1 space-y-1 text-slate-600">
+                          <li>所属クラブの単独チームが富山市大会で権利獲得した場合：富山市大会に登録が無い、選手権登録のあるクラブ員</li>
+                          <li>所属クラブの単独チームが富山市大会で敗退した場合：選手権登録のあるクラブ員</li>
+                        </ul>
+                      </div>
+                    </li>
+                    <li className="flex gap-2 items-start"><span className="font-bold text-purple-600">③</span> 各クラブから<strong>2名以上</strong>の参加、チーム合計人数<strong>10名以内</strong></li>
+                  </ul>
+                </Card>
+
+                <h3 className="font-bold text-slate-800 mb-4 text-lg border-b pb-2">申込〜大会までのフロー</h3>
+                
+                <div className="space-y-6">
+                  <div className="relative pl-6 border-l-2 border-purple-200 pb-4">
+                    <div className="absolute w-4 h-4 bg-purple-500 rounded-full -left-[9px] top-1"></div>
+                    <h4 className="font-bold text-purple-900 mb-2">フェーズ1：参加申込前</h4>
+                    <DecisionBox 
+                      question="チームのメンバーは不足していますか？"
+                      noLabel="不足していない"
+                      noContent={<div className="flex items-center gap-2"><ArrowRight size={16}/> 通常通り参加申込へ進みます。</div>}
+                      yesLabel="不足している"
+                      yesContent={
+                        <div className="mt-2 space-y-3">
+                          <p className="font-semibold text-slate-700 border-b pb-1">理事の補充が可能で、4名以上揃いますか？</p>
+                          <ul className="text-xs text-slate-500 list-disc pl-4">
+                            <li>各クラブ2名以上の参加必須（理事は当該クラブ員扱い）</li>
+                            <li>事前に補充可能理事数を確定しておくこと</li>
+                            <li>理事の補充は上位チーム優先</li>
+                          </ul>
+                          <div className="flex flex-col gap-2 mt-2">
+                            <div className="bg-emerald-50 p-2 rounded border border-emerald-100 text-emerald-700">
+                              <strong>YES：</strong> 補充して参加申込へ進みます。
+                            </div>
+                            <div className="bg-rose-50 p-2 rounded border border-rose-100 text-rose-700">
+                              <strong>NO：</strong> <span className="font-bold">次点のチーム</span>に出場権が移ります。
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    />
+                  </div>
+
+                  <div className="relative pl-6 border-l-2 border-purple-200 pb-4">
+                    <div className="absolute w-4 h-4 bg-purple-500 rounded-full -left-[9px] top-1"></div>
+                    <h4 className="font-bold text-purple-900 mb-2">フェーズ2：抽選後（大会直前）</h4>
+                    <DecisionBox 
+                      question="怪我などで再びメンバーが不足しましたか？"
+                      noLabel="不足していない"
+                      noContent={<div className="flex items-center gap-2 text-lg font-bold text-blue-600"><Trophy size={20}/> 大会参加！</div>}
+                      yesLabel="不足している"
+                      yesContent={
+                        <div className="mt-2 space-y-3">
+                          <p className="font-semibold text-slate-700 border-b pb-1">参加資格のあるチーム内の選手、または理事（最大2名）の補充は可能ですか？</p>
+                          <p className="text-xs text-slate-500">※各クラブ2名以上の参加必須（理事は当該クラブ員扱い）</p>
+                          <div className="flex flex-col gap-2 mt-2">
+                            <div className="bg-emerald-50 p-2 rounded border border-emerald-100 text-emerald-700">
+                              <strong>補充可：</strong> 補充して大会参加！
+                            </div>
+                            <div className="bg-amber-50 p-2 rounded border border-amber-200 text-amber-700">
+                              <strong>補充不可：</strong> オープン参加となります。
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 'tateyama':
+            return (
+              <div className="animate-in">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                  <CalendarCheck className="text-emerald-500" />
+                  立山科学：メンバー不足時の対応
+                </h2>
+
+                <Card className="mb-8 p-5 bg-emerald-50/50 border-emerald-100">
+                  <h3 className="font-bold text-emerald-800 mb-3 flex items-center gap-2">
+                    <UserCog size={20} /> 選手交代の基本ルール
+                  </h3>
+                  <ul className="text-sm text-slate-700 space-y-2 list-disc pl-5">
+                    <li>所属クラブの選手と交代可能です。</li>
+                    <li><strong className="text-rose-600">※ペア2名ともの交代は不可です。</strong></li>
+                    <li>60代混合も同様のルールです。</li>
+                    <li>交代選手は、出場できなくなった選手の「所属クラブから」探す必要があります。</li>
+                  </ul>
+                </Card>
+
+                <h3 className="font-bold text-slate-800 mb-4 text-lg border-b pb-2">申込〜大会までのフロー</h3>
+                
+                <div className="space-y-6">
+                  <div className="relative pl-6 border-l-2 border-emerald-200 pb-4">
+                    <div className="absolute w-4 h-4 bg-emerald-500 rounded-full -left-[9px] top-1"></div>
+                    <h4 className="font-bold text-emerald-900 mb-2">フェーズ1：参加申込前</h4>
+                    <DecisionBox 
+                      question="チームのメンバーは不足していますか？"
+                      noLabel="不足していない"
+                      noContent={<div className="flex items-center gap-2"><ArrowRight size={16}/> 通常通り参加申込へ進みます。</div>}
+                      yesLabel="不足している"
+                      yesContent={
+                        <div className="mt-2 space-y-3">
+                          <p className="font-semibold text-slate-700 border-b pb-1">上記ルールの範囲内で、選手交代は可能ですか？</p>
+                          <div className="flex flex-col gap-2 mt-2">
+                            <div className="bg-emerald-50 p-2 rounded border border-emerald-100 text-emerald-700">
+                              <strong>交代可能：</strong> 交代して参加申込へ進みます。
+                            </div>
+                            <div className="bg-rose-50 p-2 rounded border border-rose-100 text-rose-700">
+                              <strong>交代不可：</strong> <span className="font-bold">次点ペア</span>に出場権が移ります。
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    />
+                  </div>
+
+                  <div className="relative pl-6 border-l-2 border-emerald-200 pb-4">
+                    <div className="absolute w-4 h-4 bg-emerald-500 rounded-full -left-[9px] top-1"></div>
+                    <h4 className="font-bold text-emerald-900 mb-2">フェーズ2：抽選後（大会直前）</h4>
+                    <DecisionBox 
+                      question="怪我などで再びメンバーが不足しましたか？"
+                      noLabel="不足していない"
+                      noContent={<div className="flex items-center gap-2 text-lg font-bold text-blue-600"><Trophy size={20}/> 大会参加！</div>}
+                      yesLabel="不足している"
+                      yesContent={
+                        <div className="mt-2 space-y-3">
+                          <p className="font-semibold text-slate-700 border-b pb-1">所属クラブの選手、または理事と交代可能ですか？</p>
+                          <p className="text-xs text-rose-500 font-bold">※ペア2名ともの交代は不可</p>
+                          <div className="flex flex-col gap-2 mt-2">
+                            <div className="bg-emerald-50 p-2 rounded border border-emerald-100 text-emerald-700">
+                              <strong>交代可：</strong> 交代して大会参加！
+                            </div>
+                            <div className="bg-amber-50 p-2 rounded border border-amber-200 text-amber-700">
+                              <strong>交代不可：</strong> オープン参加となります。
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 'members':
+            return (
+              <div className="animate-in">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                  <Info className="text-cyan-500" />
+                  補足：チーム編成の考え方
+                </h2>
+                <p className="text-slate-600 mb-6">各クラブの出場権の状況によって、メンバーがどのように編成されるかの具体例です。前提として<strong>いずれの場合も「選手権登録のあるクラブ員」が対象</strong>です。</p>
+
+                <div className="space-y-8">
+                  {/* Case 1 */}
+                  <Card>
+                    <div className="bg-cyan-50 px-4 py-3 border-b border-cyan-100 font-bold text-cyan-900 flex justify-between items-center">
+                      <span>ケース1：【メンバーA】の考え方</span>
+                      <span className="text-xs bg-cyan-200 text-cyan-800 px-2 py-1 rounded">合同要件を満たしたクラブ</span>
+                    </div>
+                    <div className="p-4 grid md:grid-cols-2 gap-4">
+                      <div className="border rounded-lg p-3">
+                        <h4 className="text-sm font-bold text-slate-500 mb-2">富山市団体戦登録</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {['A選手', 'B選手', 'C選手', 'D選手', 'E選手'].map(p => (
+                            <span key={p} className="bg-slate-100 px-2 py-1 rounded text-sm">{p}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-full bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                          <div className="text-sm font-bold text-blue-800 mb-2">【メンバーA】に登録可能な選手</div>
+                          <div className="font-mono text-lg text-blue-600 tracking-widest font-bold">A B C D E</div>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Case 2 */}
+                  <Card>
+                    <div className="bg-cyan-50 px-4 py-3 border-b border-cyan-100 font-bold text-cyan-900">
+                      ケース2：単独チームと【メンバーB】の考え方
+                    </div>
+                    
+                    <div className="p-4 space-y-6">
+                      {/* Pattern A */}
+                      <div className="border border-slate-200 rounded-lg overflow-hidden">
+                        <div className="bg-slate-50 p-2 text-sm font-bold text-slate-700 text-center border-b">
+                          パターンA: 両チームが【出場権獲得】の場合
+                        </div>
+                        <div className="p-4 grid md:grid-cols-2 gap-6">
+                          <div>
+                            <div className="text-xs font-bold text-slate-500 mb-1">【単独チーム】(富山市団体戦登録)</div>
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(p => (
+                                <span key={p} className="bg-slate-100 border px-2 py-1 rounded text-xs">{p}選手</span>
+                              ))}
+                            </div>
+                            <div className="text-xs font-bold text-slate-500 mb-1">【富山市大会未登録】</div>
+                            <div className="flex flex-wrap gap-1">
+                              <span className="bg-amber-100 border border-amber-200 text-amber-800 px-2 py-1 rounded text-xs">J選手</span>
+                              <span className="bg-amber-100 border border-amber-200 text-amber-800 px-2 py-1 rounded text-xs">K選手</span>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <div className="text-xs font-bold text-slate-500 mb-1">【メンバーB】含む合同チーム(富山市団体戦登録)</div>
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {['H', 'I'].map(p => (
+                                <span key={p} className="bg-slate-100 border px-2 py-1 rounded text-xs">{p}選手</span>
+                              ))}
+                            </div>
+                            <div className="bg-rose-50 text-rose-700 text-xs p-2 rounded mt-4 border border-rose-100">
+                              <strong>注意:</strong> 両チームとも出場権を獲得した場合、メンバーの入れ替えはNGです。
+                              <br/>※未登録の J, K選手は、どちらかに登録できます。
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Pattern B */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="border border-slate-200 rounded-lg p-4 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-1 font-bold">単独チームが出場権無</div>
+                          <div className="text-sm font-bold text-slate-700 mb-3 mt-2">合同チームのみ【出場権獲得】</div>
+                          <div className="bg-purple-50 border border-purple-200 rounded p-3 text-center">
+                            <div className="text-xs font-bold text-purple-800 mb-1">【メンバーB】として登録可能な選手</div>
+                            <div className="font-mono text-sm text-purple-600 font-bold tracking-widest break-all">A B C D E F G H I J K</div>
+                          </div>
+                        </div>
+                        
+                        <div className="border border-slate-200 rounded-lg p-4 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-1 font-bold">合同チームが出場権無</div>
+                          <div className="text-sm font-bold text-slate-700 mb-3 mt-2">単独チームのみ【出場権獲得】</div>
+                          <div className="bg-emerald-50 border border-emerald-200 rounded p-3 text-center">
+                            <div className="text-xs font-bold text-emerald-800 mb-1">【単独チーム】として登録可能な選手</div>
+                            <div className="font-mono text-sm text-emerald-600 font-bold tracking-widest break-all">A B C D E F G H I J K</div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            );
+
+          default:
+            return null;
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-4 md:p-8">
+          <div className="max-w-5xl mx-auto">
+            
+            {/* Header */}
+            <header className="mb-8 text-center md:text-left">
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+                富山市フレッシュテニス協会
+              </h1>
+              <p className="text-slate-500 font-medium mt-1">団体戦・合同チーム ルールガイド</p>
+            </header>
+
+            <div className="flex flex-col md:flex-row gap-8">
+              {/* Sidebar / Navigation */}
+              <div className="w-full md:w-64 shrink-0">
+                <nav className="flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+                  {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-left transition-all whitespace-nowrap md:whitespace-normal
+                          ${isActive 
+                            ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                          }
+                        `}
+                      >
+                        <Icon size={18} className={isActive ? 'text-blue-100' : 'text-slate-400'} />
+                        {tab.label}
+                      </button>
+                    )
+                  })}
+                </nav>
+              </div>
+
+              {/* Main Content Area */}
+              <div className="flex-1 min-w-0">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 min-h-[600px]">
+                  {renderContent()}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
